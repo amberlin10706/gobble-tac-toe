@@ -7,12 +7,11 @@ interface PieceSetProps {
 
 export default function PieceSet({ pieces, disabledDrop }: PieceSetProps) {
   return (
-    <div className="overflow-y-auto max-h-[90vh] h-full">
-      <div className="border">
+    <div className="h-full overflow-y-auto border">
+      <div className="flex flex-col gap-y-3 pt-4">
         {pieces.map((piece) => (
           <div
-            className="flex justify-center items-center border"
-            style={{ height: "120px" }}
+            className="flex justify-center items-center max-w-full"
             key={piece.size}
           >
             {piece.inUse === null && (

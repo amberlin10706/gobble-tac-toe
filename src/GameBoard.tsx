@@ -7,6 +7,7 @@ import GamePiece, {
 } from "./GamePiece";
 import React, { useState } from "react";
 import GameRules from "./GameRules";
+import GameHeader from "./GameHeader";
 
 interface GameBoardProps {}
 
@@ -89,46 +90,34 @@ export default function GameBoard() {
   }
 
   return (
-    <div className=" max-w-screen-xl mx-auto p-4 flex gap-x-4 gap-y-10 md:pt-10 min-w-[660px]">
-      <div className="flex-[1]">
-        <PieceSet pieces={A} disabledDrop={currentPlayer !== "A"} />
-      </div>
+    <div className="max-w-screen-lg mx-auto p-2 md:pt-5 min-w-[660px]">
+      <GameHeader
+        winner={winner}
+        currentPlayer={currentPlayer}
+        resetGame={resetGame}
+      />
 
-      <div className="flex-[3] flex flex-col justify-center">
-        <div className="mb-4 flex justify-center items-center gap-x-1">
-          <div className="text-2xl font-bold">
-            {winner ? "Winner is" : "Current Player"}
+      <div className="flex gap-x-4 gap-y-10 h-[calc((100vh-160px))] mt-3">
+        <div className="w-[130px] bg-orange-50">
+          <PieceSet pieces={A} disabledDrop={currentPlayer !== "A"} />
+        </div>
+
+        <div className="w-full">
+          <div className="grid grid-cols-3 grid-rows-3 w-full h-full border">
+            {cells.map((cell, cellIndex) => (
+              <BoardCell
+                key={cellIndex}
+                piece={cell[cell.length - 1] || null}
+                currentPlayer={currentPlayer}
+                onDropPiece={(item) => onDropPiece(item, cellIndex)}
+              />
+            ))}
           </div>
-          <img
-            src={`/piece_pig_${winner || currentPlayer}.png`}
-            alt={`piece_${winner || currentPlayer}`}
-            draggable="false"
-            style={{ width: "50px" }}
-          />
-          {winner && (
-            <button
-              className="bg-blue-600 text-white rounded px-2 py-1 cursor-pointer"
-              onClick={resetGame}
-            >
-              Reset Game
-            </button>
-          )}
         </div>
-        <div className="grid grid-cols-3 grid-rows-3 w-full border h-[calc((100vh-150px))] max-h-[600px]">
-          {cells.map((cell, cellIndex) => (
-            <BoardCell
-              key={cellIndex}
-              piece={cell[cell.length - 1] || null}
-              currentPlayer={currentPlayer}
-              onDropPiece={(item) => onDropPiece(item, cellIndex)}
-            />
-          ))}
-        </div>
-        <GameRules />
-      </div>
 
-      <div className="flex-[1]">
-        <PieceSet pieces={B} disabledDrop={currentPlayer !== "B"} />
+        <div className="w-[130px] bg-blue-50">
+          <PieceSet pieces={B} disabledDrop={currentPlayer !== "B"} />
+        </div>
       </div>
     </div>
   );

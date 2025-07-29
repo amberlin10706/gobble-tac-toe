@@ -7,7 +7,7 @@ export default function GameRules() {
   return (
     <>
       <button
-        className="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 rounded font-bold mt-2"
+        className="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 rounded cursor-pointer font-bold"
         onClick={() => setOpen(true)}
       >
         📘 How to Play
