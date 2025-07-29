@@ -19,7 +19,7 @@ const pieceImageMap = {
 } as const;
 
 export default function GamePiece({ size, owner, inUse, disabledDrop = false }: GamePieceProps) {
-  const width = size * 25;
+  const width = (size+1) * 20;
 
   const [{ isDragging }, dragRef] = useDrag({
     type: 'PIECE',
