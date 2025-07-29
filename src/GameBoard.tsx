@@ -100,8 +100,12 @@ export default function GameBoard() {
       />
 
       <div className="flex gap-x-4 gap-y-10 h-[calc((100vh-160px))] mt-3">
-        <div className="w-[130px] bg-orange-50">
-          <PieceSet pieces={A} disabledDrop={currentPlayer !== "A"} />
+        <div className="w-[130px] bg-orange-50 flex-shrink-0">
+          <PieceSet
+            pieces={A}
+            disabledDrop={currentPlayer !== "A"}
+            winner={winner}
+          />
         </div>
 
         <div className="w-full">
@@ -112,13 +116,18 @@ export default function GameBoard() {
                 piece={cell[cell.length - 1] || null}
                 currentPlayer={currentPlayer}
                 onDropPiece={(item) => onDropPiece(item, cellIndex)}
+                winner={winner}
               />
             ))}
           </div>
         </div>
 
-        <div className="w-[130px] bg-blue-50">
-          <PieceSet pieces={B} disabledDrop={currentPlayer !== "B"} />
+        <div className="w-[130px] bg-blue-50 flex-shrink-0">
+          <PieceSet
+            pieces={B}
+            disabledDrop={currentPlayer !== "B"}
+            winner={winner}
+          />
         </div>
       </div>
     </div>

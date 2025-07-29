@@ -12,6 +12,7 @@ export type GamePieceInfo = {
 
 export interface GamePieceProps extends GamePieceInfo {
   disabledDrop: boolean;
+  isWin?: boolean;
 }
 
 const pieceImageMap = {
@@ -24,6 +25,7 @@ export default function GamePiece({
   owner,
   inUse,
   disabledDrop = false,
+  isWin = false,
 }: GamePieceProps) {
   const [{ isDragging }, dragRef] = useDrag({
     type: "PIECE",
@@ -43,7 +45,19 @@ export default function GamePiece({
         width: getPieceWidth(size),
         cursor: !disabledDrop ? "move" : "not-allowed",
       }}
+      className="relative"
     >
+      {isWin && (
+        <img
+          src="/crown.png"
+          alt=""
+          className="absolute w-[30px] top-0 left-[50%]"
+          style={{
+            width: getPieceWidth(size) * 0.2,
+            transform: "translateX(-50%) translateY(-50%) rotate(10deg)",
+          }}
+        />
+      )}
       <img
         src={pieceImageMap[owner]}
         alt={`piece_${owner}_${size}`}

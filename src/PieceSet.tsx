@@ -1,11 +1,16 @@
-import GamePiece, { GamePieceInfo } from "./GamePiece";
+import GamePiece, { GamePieceInfo, GamePieceOwner } from "./GamePiece";
 
 interface PieceSetProps {
   pieces: GamePieceInfo[];
   disabledDrop: boolean;
+  winner: GamePieceOwner | null | undefined;
 }
 
-export default function PieceSet({ pieces, disabledDrop }: PieceSetProps) {
+export default function PieceSet({
+  pieces,
+  disabledDrop,
+  winner,
+}: PieceSetProps) {
   return (
     <div className="h-full overflow-y-auto border">
       <div className="flex flex-col gap-y-3 pt-4">
@@ -20,6 +25,7 @@ export default function PieceSet({ pieces, disabledDrop }: PieceSetProps) {
                 owner={piece.owner}
                 inUse={piece.inUse}
                 disabledDrop={disabledDrop}
+                isWin={winner === piece.owner}
               />
             )}
           </div>

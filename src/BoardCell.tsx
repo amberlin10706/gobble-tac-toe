@@ -5,12 +5,14 @@ interface BoardCellProps {
   piece?: GamePieceInfo;
   onDropPiece: (item: GamePieceInfo) => void;
   currentPlayer: GamePieceOwner;
+  winner: GamePieceOwner | null | undefined;
 }
 
 export default function BoardCell({
   piece,
   currentPlayer,
   onDropPiece,
+  winner,
 }: BoardCellProps) {
   const [{ isOver, canDrop }, dropRef] = useDrop({
     accept: "PIECE",
@@ -41,6 +43,7 @@ export default function BoardCell({
           owner={piece.owner}
           inUse={piece.inUse}
           disabledDrop={currentPlayer !== piece.owner}
+          isWin={winner === piece.owner}
         />
       )}
     </div>

@@ -15,7 +15,7 @@ export default function GameHeader({
 }: GameHeaderProps) {
   return (
     <div>
-      <div className="flex justify-center items-center gap-x-2">
+      <div className="flex justify-center items-center gap-x-2 mb-2">
         <GameRules />
         {winner && (
           <button
