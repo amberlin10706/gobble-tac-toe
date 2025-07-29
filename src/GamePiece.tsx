@@ -47,8 +47,13 @@ export default function GamePiece({
       <img
         src={pieceImageMap[owner]}
         alt={`piece_${owner}_${size}`}
-        style={{ opacity: isDragging ? 0.5 : 1 }}
-        draggable="false"
+        style={{
+          opacity: isDragging ? 0.5 : 1,
+          userSelect: "none",
+          touchAction: "none",
+        }}
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
       />
     </div>
   );
