@@ -1,7 +1,8 @@
 import PieceSet from './PieceSet';
 import BoardCell from './BoardCell';
 import GamePiece, {GamePieceOwner, GamePieceInfo, GamePieceSize} from './GamePiece';
-import {useState} from 'react';
+import React, {useState} from 'react';
+import GameRules from './GameRules';
 
 interface GameBoardProps {
 }
@@ -62,7 +63,7 @@ export default function GameBoard() {
   }
 
   return (
-    <div className=" max-w-screen-xl mx-auto p-4 flex gap-x-4 gap-y-10 pt-10">
+    <div className=" max-w-screen-xl mx-auto p-4 flex gap-x-4 gap-y-10 md:pt-10">
       <div className="flex-[1] border">
         <PieceSet pieces={A} disabledDrop={currentPlayer !== 'A'} />
       </div>
@@ -86,7 +87,7 @@ export default function GameBoard() {
             )
           }
         </div>
-        <div className="grid grid-cols-3 w-full border">
+        <div className="grid grid-cols-3 grid-rows-3 w-full border h-[calc((100vh-150px))] max-h-[600px]">
           {
             cells.map((cell, cellIndex) => (
               <BoardCell
@@ -98,6 +99,7 @@ export default function GameBoard() {
             ))
           }
         </div>
+        <GameRules />
       </div>
 
       <div className="flex-[1] border">

@@ -26,7 +26,7 @@ export default function BoardCell({ piece, currentPlayer, onDropPiece }: BoardCe
   return (
     <div
       ref={dropRef as any}
-      className={`h-[clamp(120px,16vw,160px)] border flex justify-center items-center 
+      className={`border flex justify-center items-center
       ${isOver && canDrop ? 'bg-green-200' : ''} 
       ${isOver && !canDrop ? 'bg-red-200' : ''}`}
     >
