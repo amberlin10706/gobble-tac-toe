@@ -1,15 +1,9 @@
 import PieceSet from "./PieceSet";
 import BoardCell from "./BoardCell";
-import GamePiece, {
-  GamePieceOwner,
-  GamePieceInfo,
-  GamePieceSize,
-} from "./GamePiece";
+import { GamePieceOwner, GamePieceInfo, GamePieceSize } from "./GamePiece";
 import React, { useState } from "react";
-import GameRules from "./GameRules";
 import GameHeader from "./GameHeader";
-
-interface GameBoardProps {}
+import confetti from "canvas-confetti";
 
 export default function GameBoard() {
   const [cells, setCells] = useState<GamePieceInfo[][]>(() =>
@@ -74,6 +68,14 @@ export default function GameBoard() {
   const winner = calculateWinner(
     cells.map((cell) => cell[cell.length - 1]?.owner),
   );
+  if (winner) {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      angle: winner === "A" ? 120 : 60,
+      origin: { y: 0.6 },
+    });
+  }
   function resetGame() {
     setCells(Array.from({ length: 9 }, () => []));
     setA(
