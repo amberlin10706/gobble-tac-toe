@@ -1,7 +1,7 @@
 import CustomDragLayer from "./CustomDragLayer.js";
 import GameBoard from "./GameBoard.js";
-import { DndProvider } from 'react-dnd';
-import { TouchBackend } from 'react-dnd-touch-backend';
+import { DndProvider } from "react-dnd";
+import { TouchBackend } from "react-dnd-touch-backend";
 
 function App() {
   return (
@@ -9,7 +9,7 @@ function App() {
       <GameBoard />
       <CustomDragLayer />
     </DndProvider>
-  )
+  );
 }
 
-export default App
+export default App;

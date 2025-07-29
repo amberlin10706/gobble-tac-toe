@@ -1,5 +1,5 @@
-import {useDrop} from 'react-dnd';
-import GamePiece, {GamePieceInfo, GamePieceOwner} from './GamePiece';
+import { useDrop } from "react-dnd";
+import GamePiece, { GamePieceInfo, GamePieceOwner } from "./GamePiece";
 
 interface BoardCellProps {
   piece?: GamePieceInfo;
@@ -7,9 +7,13 @@ interface BoardCellProps {
   currentPlayer: GamePieceOwner;
 }
 
-export default function BoardCell({ piece, currentPlayer, onDropPiece }: BoardCellProps) {
+export default function BoardCell({
+  piece,
+  currentPlayer,
+  onDropPiece,
+}: BoardCellProps) {
   const [{ isOver, canDrop }, dropRef] = useDrop({
-    accept: 'PIECE',
+    accept: "PIECE",
     canDrop: (item: GamePieceInfo) => {
       if (!piece) return true; // 空格子可放
       return item.size > piece.size; // 僅當 size 較大才能放
@@ -27,10 +31,10 @@ export default function BoardCell({ piece, currentPlayer, onDropPiece }: BoardCe
     <div
       ref={dropRef as any}
       className={`border flex justify-center items-center
-      ${isOver && canDrop ? 'bg-green-200' : ''} 
-      ${isOver && !canDrop ? 'bg-red-200' : ''}`}
+      ${isOver && canDrop ? "bg-green-200" : ""} 
+      ${isOver && !canDrop ? "bg-red-200" : ""}`}
     >
-      { !!piece && (
+      {!!piece && (
         <GamePiece
           key={piece.size}
           size={piece.size}

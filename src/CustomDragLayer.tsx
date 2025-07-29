@@ -1,18 +1,20 @@
-import {GamePieceInfo} from './GamePiece';
-import {useDragLayer} from 'react-dnd';
-import {CSSProperties} from 'react';
-import {getPieceWidth} from '../utils/getPieceWidth';
+import { GamePieceInfo } from "./GamePiece";
+import { useDragLayer } from "react-dnd";
+import { CSSProperties } from "react";
+import { getPieceWidth } from "../utils/getPieceWidth";
 
 const layerStyles: CSSProperties = {
-  position: 'fixed',
-  pointerEvents: 'none',
+  position: "fixed",
+  pointerEvents: "none",
   zIndex: 100,
   left: 0,
   top: 0,
 };
 
-function getItemStyles(clientOffset: { x: number; y: number } | null): CSSProperties {
-  if (!clientOffset) return { display: 'none' };
+function getItemStyles(
+  clientOffset: { x: number; y: number } | null,
+): CSSProperties {
+  if (!clientOffset) return { display: "none" };
   const { x, y } = clientOffset;
   return {
     transform: `translate(${x}px, ${y}px)`,
@@ -20,21 +22,16 @@ function getItemStyles(clientOffset: { x: number; y: number } | null): CSSProper
 }
 
 const pieceImageMap = {
-  A: '/piece_pig_A.png',
-  B: '/piece_pig_B.png',
+  A: "/piece_pig_A.png",
+  B: "/piece_pig_B.png",
 } as const;
 
 export default function CustomDragLayer() {
-  const {
-    isDragging,
-    item,
-    clientOffset,
-  } = useDragLayer((monitor) => ({
+  const { isDragging, item, clientOffset } = useDragLayer((monitor) => ({
     item: monitor.getItem() as GamePieceInfo,
     isDragging: monitor.isDragging(),
     clientOffset: monitor.getClientOffset(),
   }));
-
 
   if (!isDragging || !item) return null;
 
@@ -54,6 +51,3 @@ export default function CustomDragLayer() {
     </div>
   );
 }
-
-
-

@@ -1,7 +1,6 @@
-import {useState} from 'react';
+import { useState } from "react";
 
-interface GameRulesProps {
-}
+interface GameRulesProps {}
 
 export default function GameRules() {
   const [open, setOpen] = useState(false);
