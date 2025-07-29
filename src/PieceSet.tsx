@@ -14,7 +14,7 @@ export default function PieceSet({ pieces, disabledDrop, position = 'right' }:Pi
       return pieces.slice(3).concat(pieces.slice(0, 3))
     }
     return pieces
-  }, []);
+  }, [pieces]);
 
   return (
     <div className="grid grid-flow-col grid-rows-3 h-full"

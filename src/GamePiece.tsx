@@ -1,4 +1,5 @@
 import {useDrag} from 'react-dnd';
+import {getPieceWidth} from '../utils/getPieceWidth';
 
 export type GamePieceOwner = 'A' | 'B';
 export type GamePieceSize = 1 | 2 | 3 | 4 | 5 | 6;
@@ -19,7 +20,6 @@ const pieceImageMap = {
 } as const;
 
 export default function GamePiece({ size, owner, inUse, disabledDrop = false }: GamePieceProps) {
-  const width = (size+1) * 20;
 
   const [{ isDragging }, dragRef] = useDrag({
     type: 'PIECE',
@@ -33,7 +33,10 @@ export default function GamePiece({ size, owner, inUse, disabledDrop = false }: 
   });
 
   return (
-    <div ref={dragRef as any} style={{ width, cursor: !disabledDrop ? 'move' : 'not-allowed' }}>
+    <div
+      ref={dragRef as any}
+      style={{ width: getPieceWidth(size), cursor: !disabledDrop ? 'move' : 'not-allowed' }}
+    >
       <img
         src={pieceImageMap[owner]}
         alt={`piece_${owner}_${size}`}
