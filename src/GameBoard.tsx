@@ -89,8 +89,8 @@ export default function GameBoard() {
   }
 
   return (
-    <div className=" max-w-screen-xl mx-auto p-4 flex gap-x-4 gap-y-10 md:pt-10">
-      <div className="flex-[1] border">
+    <div className=" max-w-screen-xl mx-auto p-4 flex gap-x-4 gap-y-10 md:pt-10 min-w-[660px]">
+      <div className="flex-[1]">
         <PieceSet pieces={A} disabledDrop={currentPlayer !== "A"} />
       </div>
 
@@ -127,7 +127,7 @@ export default function GameBoard() {
         <GameRules />
       </div>
 
-      <div className="flex-[1] border">
+      <div className="flex-[1]">
         <PieceSet pieces={B} disabledDrop={currentPlayer !== "B"} />
       </div>
     </div>
