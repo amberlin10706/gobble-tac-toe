@@ -16,8 +16,11 @@ function getItemStyles(
 ): CSSProperties {
   if (!clientOffset) return { display: "none" };
   const { x, y } = clientOffset;
+  // 向右 10px，向上 20px 偏移
+  const offsetX = -50;
+  const offsetY = -50;
   return {
-    transform: `translate(${x}px, ${y}px)`,
+    transform: `translate(${x + offsetX}px, ${y + offsetY}px)`,
   };
 }
 
