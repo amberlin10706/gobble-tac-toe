@@ -106,7 +106,9 @@ export default function GameBoard() {
         <div className="bg-orange-50">
           <PieceSet
             pieces={A}
-            disabledDrop={!!currentPlayer && currentPlayer !== "A"}
+            disabledDrop={
+              !!winner || (!!currentPlayer && currentPlayer !== "A")
+            }
             winner={winner}
           />
         </div>
@@ -128,7 +130,9 @@ export default function GameBoard() {
         <div className="bg-blue-50">
           <PieceSet
             pieces={B}
-            disabledDrop={!!currentPlayer && currentPlayer !== "B"}
+            disabledDrop={
+              !!winner || (!!currentPlayer && currentPlayer !== "B")
+            }
             winner={winner}
           />
         </div>

@@ -42,7 +42,9 @@ export default function BoardCell({
           size={piece.size}
           owner={piece.owner}
           inUse={piece.inUse}
-          disabledDrop={!!currentPlayer && currentPlayer !== piece.owner}
+          disabledDrop={
+            !!winner || (!!currentPlayer && currentPlayer !== piece.owner)
+          }
           isWin={winner === piece.owner}
         />
       )}
