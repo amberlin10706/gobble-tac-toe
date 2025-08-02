@@ -102,7 +102,7 @@ export default function GameBoard() {
     <div className="max-w-screen-lg mx-auto p-2 md:pt-5">
       <GameHeader resetGame={resetGame} />
 
-      <div className="flex flex-col gap-y-4 bg-red-200 mt-3">
+      <div className="flex flex-col gap-y-4 mt-3">
         <div className="bg-orange-50">
           <PieceSet
             pieces={A}
