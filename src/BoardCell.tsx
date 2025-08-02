@@ -4,7 +4,7 @@ import GamePiece, { GamePieceInfo, GamePieceOwner } from "./GamePiece";
 interface BoardCellProps {
   piece?: GamePieceInfo;
   onDropPiece: (item: GamePieceInfo) => void;
-  currentPlayer: GamePieceOwner;
+  currentPlayer: GamePieceOwner | null;
   winner: GamePieceOwner | null | undefined;
 }
 
@@ -42,7 +42,7 @@ export default function BoardCell({
           size={piece.size}
           owner={piece.owner}
           inUse={piece.inUse}
-          disabledDrop={currentPlayer !== piece.owner}
+          disabledDrop={!!currentPlayer && currentPlayer !== piece.owner}
           isWin={winner === piece.owner}
         />
       )}

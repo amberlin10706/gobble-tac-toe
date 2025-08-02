@@ -21,7 +21,9 @@ export default function GameBoard() {
     ),
   );
 
-  const [currentPlayer, setCurrentPlayer] = useState<GamePieceOwner>("A");
+  const [currentPlayer, setCurrentPlayer] = useState<GamePieceOwner | null>(
+    null,
+  );
 
   const onDropPiece = (item: GamePieceInfo, cellIndex: number) => {
     const lastPieceOfSelectedCell =
@@ -58,7 +60,7 @@ export default function GameBoard() {
       });
     });
 
-    if (currentPlayer === "A") {
+    if (item.owner === "A") {
       setCurrentPlayer("B");
     } else {
       setCurrentPlayer("A");
@@ -93,24 +95,19 @@ export default function GameBoard() {
         generateInitPiece((i + 1) as GamePieceSize, "B"),
       ),
     );
-    setCurrentPlayer("A");
+    setCurrentPlayer(null);
   }
 
   return (
     <div className="max-w-screen-lg mx-auto p-2 md:pt-5">
-      <GameHeader
-        winner={winner}
-        currentPlayer={currentPlayer}
-        resetGame={resetGame}
-      />
+      <GameHeader resetGame={resetGame} />
 
       <div className="flex flex-col gap-y-4 bg-red-200 mt-3">
         <div className="bg-orange-50">
           <PieceSet
             pieces={A}
-            disabledDrop={currentPlayer !== "A"}
+            disabledDrop={!!currentPlayer && currentPlayer !== "A"}
             winner={winner}
-            isMyTurn={currentPlayer === "A"}
           />
         </div>
 
@@ -131,9 +128,8 @@ export default function GameBoard() {
         <div className="bg-blue-50">
           <PieceSet
             pieces={B}
-            disabledDrop={currentPlayer !== "B"}
+            disabledDrop={!!currentPlayer && currentPlayer !== "B"}
             winner={winner}
-            isMyTurn={currentPlayer === "B"}
           />
         </div>
       </div>
