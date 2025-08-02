@@ -70,12 +70,17 @@ export default function GameBoard() {
   );
   if (winner) {
     confetti({
-      particleCount: 100,
-      spread: 70,
-      angle: winner === "A" ? 120 : 60,
-      origin: { y: 0.6 },
+      particleCount: 100, // 總共要噴幾顆紙屑
+      spread: 200, // 散開的範圍角度
+      angle: winner === "A" ? 90 : 270, // 噴射角度
+      origin: { y: 0.5 }, // 發射起點，y 越小越靠近畫面上方
+      startVelocity: 10, // 初速度（預設是 45），越小飛得越慢
+      gravity: 0.3, // 重力（預設是 1），越小飄越久、越慢掉下來
+      ticks: 200, // 每顆粒子存活的幀數，預設約 200，越高越持久
+      decay: 0.95, // 衰減率，1 是永遠不減速，越接近 1 飄越久
     });
   }
+
   function resetGame() {
     setCells(Array.from({ length: 9 }, () => []));
     setA(
@@ -92,23 +97,24 @@ export default function GameBoard() {
   }
 
   return (
-    <div className="max-w-screen-lg mx-auto p-2 md:pt-5 min-w-[660px]">
+    <div className="max-w-screen-lg mx-auto p-2 md:pt-5">
       <GameHeader
         winner={winner}
         currentPlayer={currentPlayer}
         resetGame={resetGame}
       />
 
-      <div className="flex gap-x-4 gap-y-10 h-[calc((100vh-160px))] mt-3">
-        <div className="w-[130px] bg-orange-50 flex-shrink-0">
+      <div className="flex flex-col gap-y-4 bg-red-200 mt-3">
+        <div className="bg-orange-50">
           <PieceSet
             pieces={A}
             disabledDrop={currentPlayer !== "A"}
             winner={winner}
+            isMyTurn={currentPlayer === "A"}
           />
         </div>
 
-        <div className="w-full">
+        <div className="w-full h-[calc(100vh-300px)]">
           <div className="grid grid-cols-3 grid-rows-3 w-full h-full border">
             {cells.map((cell, cellIndex) => (
               <BoardCell
@@ -122,11 +128,12 @@ export default function GameBoard() {
           </div>
         </div>
 
-        <div className="w-[130px] bg-blue-50 flex-shrink-0">
+        <div className="bg-blue-50">
           <PieceSet
             pieces={B}
             disabledDrop={currentPlayer !== "B"}
             winner={winner}
+            isMyTurn={currentPlayer === "B"}
           />
         </div>
       </div>

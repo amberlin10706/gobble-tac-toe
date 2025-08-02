@@ -26,17 +26,17 @@ export default function GameHeader({
           </button>
         )}
       </div>
-      <div className="flex justify-center items-center gap-x-1">
-        <div className="text-2xl font-bold">
-          {winner ? "Winner is" : "Current Player"}
-        </div>
-        <img
-          src={`/piece_pig_${winner || currentPlayer}.png`}
-          alt={`piece_${winner || currentPlayer}`}
-          draggable="false"
-          style={{ width: "50px" }}
-        />
-      </div>
+      {/*<div class`Name="flex justify-center items-center gap-x-1">*/}
+      {/*  <div className="text-2xl font-bold">*/}
+      {/*    {winner ? "Winner is" : "Current Player"}*/}
+      {/*  </div>*/}
+      {/*  <img*/}
+      {/*    src={`/piece_pig_${winner || currentPlayer}.png`}*/}
+      {/*    alt={`piece_${winner || currentPlayer}`}*/}
+      {/*    draggable="false"*/}
+      {/*    style={{ width: "50px" }}*/}
+      {/*  />*/}
+      {/*</div>*/}
     </div>
   );
 }
