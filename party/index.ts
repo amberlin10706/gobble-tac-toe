@@ -18,6 +18,9 @@ type GameState = {
   currentPlayer: GamePieceOwner;
   winner: GamePieceOwner | null;
   phase: GamePhase;
+  readyA: boolean;
+  readyB: boolean;
+  restartedBy: GamePieceOwner | null;
 };
 
 type ClientMessage =
@@ -42,6 +45,9 @@ function initialGameState(): GameState {
     currentPlayer: "A",
     winner: null,
     phase: "waiting",
+    readyA: false,
+    readyB: false,
+    restartedBy: null,
   };
 }
 
@@ -85,12 +91,13 @@ function applyDrop(state: GameState, item: GamePieceInfo, cellIndex: number): Ga
   const winner = calculateWinner(newCells.map((cell) => cell[cell.length - 1]?.owner));
 
   return {
+    ...state,
     cells: newCells,
     piecesA: newPiecesA,
     piecesB: newPiecesB,
-    currentPlayer: item.owner === "A" ? "B" : "A",
+    currentPlayer: (item.owner === "A" ? "B" : "A") as GamePieceOwner,
     winner,
-    phase: "playing",
+    phase: "playing" as GamePhase,
   };
 }
 
@@ -173,10 +180,18 @@ export default class GameRoom implements Party.Server {
       if (!role) return;
       this.readySet.add(sender.id);
 
+      const readyA = !!(this.slots[0] && this.readySet.has(this.slots[0]) && this.roleMap[this.slots[0]] === "A") ||
+                     !!(this.slots[1] && this.readySet.has(this.slots[1]) && this.roleMap[this.slots[1]] === "A");
+      const readyB = !!(this.slots[0] && this.readySet.has(this.slots[0]) && this.roleMap[this.slots[0]] === "B") ||
+                     !!(this.slots[1] && this.readySet.has(this.slots[1]) && this.roleMap[this.slots[1]] === "B");
       const bothReady = this.slots.every((id) => id && this.readySet.has(id));
-      if (bothReady) {
-        this.game = { ...this.game, phase: "playing" };
-      }
+
+      this.game = {
+        ...this.game,
+        readyA,
+        readyB,
+        phase: bothReady ? "playing" : "waiting",
+      };
       this.broadcastState();
     }
 
@@ -193,8 +208,11 @@ export default class GameRoom implements Party.Server {
 
     if (msg.type === "reset") {
       if (!role) return;
-      this.game = initialGameState();
       this.readySet.clear();
+      this.readySet.add(sender.id); // resetter is auto-ready
+      const readyA = role === "A";
+      const readyB = role === "B";
+      this.game = { ...initialGameState(), readyA, readyB, restartedBy: role };
       this.broadcastState();
     }
   }
