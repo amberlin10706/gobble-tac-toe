@@ -1,5 +1,5 @@
-import CustomDragLayer from "./CustomDragLayer.js";
-import GameBoard from "./GameBoard.js";
+import CustomDragLayer from "./CustomDragLayer";
+import GameBoard from "./GameBoard";
 import { DndProvider } from "react-dnd";
 import { TouchBackend } from "react-dnd-touch-backend";
 
