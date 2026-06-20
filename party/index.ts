@@ -106,10 +106,39 @@ function applyDrop(state: GameState, item: GamePieceInfo, cellIndex: number): Ga
 }
 
 export class GameRoom extends DurableObject<Env> {
+  // Persisted via storage to survive hibernation
   slots: [string | null, string | null] = [null, null];
   roleMap: Record<string, GamePieceOwner> = {};
   readySet: Set<string> = new Set();
   game: GameState = initialGameState();
+
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+    // Restore persisted state on wake from hibernation
+    this.ctx.blockConcurrencyWhile(async () => {
+      const stored = await this.ctx.storage.get<{
+        slots: [string | null, string | null];
+        roleMap: Record<string, GamePieceOwner>;
+        readySet: string[];
+        game: GameState;
+      }>("roomState");
+      if (stored) {
+        this.slots = stored.slots;
+        this.roleMap = stored.roleMap;
+        this.readySet = new Set(stored.readySet);
+        this.game = stored.game;
+      }
+    });
+  }
+
+  async saveState() {
+    await this.ctx.storage.put("roomState", {
+      slots: this.slots,
+      roleMap: this.roleMap,
+      readySet: [...this.readySet],
+      game: this.game,
+    });
+  }
 
   getPlayersInfo() {
     const aId = Object.entries(this.roleMap).find(([, r]) => r === "A")?.[0];
@@ -138,35 +167,42 @@ export class GameRoom extends DurableObject<Env> {
     const connId = crypto.randomUUID();
     server.serializeAttachment({ connId });
 
-    if (!this.slots[0]) {
-      this.slots[0] = connId;
-      this.sendTo(server, { type: "assigned", role: "waiting" });
-      this.sendTo(server, { type: "state", state: this.game, playersInfo: this.getPlayersInfo() });
-    } else if (!this.slots[1]) {
-      this.slots[1] = connId;
+    const emptySlot = this.slots[0] === null ? 0 : this.slots[1] === null ? 1 : -1;
 
-      const firstGetsA = Math.random() < 0.5;
-      this.roleMap[this.slots[0]] = firstGetsA ? "A" : "B";
-      this.roleMap[connId] = firstGetsA ? "B" : "A";
+    if (emptySlot !== -1) {
+      this.slots[emptySlot] = connId;
+      const otherSlot = emptySlot === 0 ? 1 : 0;
+      const otherConnId = this.slots[otherSlot];
 
-      // Notify slot[0] of their role
-      const ws0 = this.ctx.getWebSockets().find((ws) => {
-        const att = ws.deserializeAttachment() as { connId: string };
-        return att?.connId === this.slots[0];
-      });
-      if (ws0) this.sendTo(ws0, { type: "assigned", role: this.roleMap[this.slots[0]] });
-      this.sendTo(server, { type: "assigned", role: this.roleMap[connId] });
+      if (otherConnId === null) {
+        // Only one player so far — wait for second
+        this.sendTo(server, { type: "assigned", role: "waiting" });
+        this.sendTo(server, { type: "state", state: this.game, playersInfo: this.getPlayersInfo() });
+      } else {
+        // Both slots now filled — assign roles
+        const thisGetsA = Math.random() < 0.5;
+        this.roleMap[connId] = thisGetsA ? "A" : "B";
+        this.roleMap[otherConnId] = thisGetsA ? "B" : "A";
 
-      this.broadcastState();
+        const wsOther = this.ctx.getWebSockets().find((ws) => {
+          const att = ws.deserializeAttachment() as { connId: string };
+          return att?.connId === otherConnId;
+        });
+        if (wsOther) this.sendTo(wsOther, { type: "assigned", role: this.roleMap[otherConnId] });
+        this.sendTo(server, { type: "assigned", role: this.roleMap[connId] });
+
+        this.broadcastState();
+      }
     } else {
       this.sendTo(server, { type: "assigned", role: "spectator" });
       this.sendTo(server, { type: "state", state: this.game, playersInfo: this.getPlayersInfo() });
     }
 
+    await this.saveState();
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  webSocketMessage(ws: WebSocket, message: string) {
+  async webSocketMessage(ws: WebSocket, message: string) {
     const att = ws.deserializeAttachment() as { connId: string };
     const connId = att?.connId;
     if (!connId) return;
@@ -186,6 +222,7 @@ export class GameRoom extends DurableObject<Env> {
 
       this.game = { ...this.game, readyA, readyB, phase: bothReady ? "playing" : "waiting" };
       this.broadcastState();
+      await this.saveState();
     }
 
     if (msg.type === "drop") {
@@ -197,6 +234,7 @@ export class GameRoom extends DurableObject<Env> {
 
       this.game = newState;
       this.broadcastState();
+      await this.saveState();
     }
 
     if (msg.type === "reset") {
@@ -207,10 +245,11 @@ export class GameRoom extends DurableObject<Env> {
       const readyB = role === "B";
       this.game = { ...initialGameState(), readyA, readyB, restartedBy: role };
       this.broadcastState();
+      await this.saveState();
     }
   }
 
-  webSocketClose(ws: WebSocket) {
+  async webSocketClose(ws: WebSocket) {
     const att = ws.deserializeAttachment() as { connId: string };
     const connId = att?.connId;
     if (!connId) return;
@@ -225,10 +264,11 @@ export class GameRoom extends DurableObject<Env> {
     }
 
     this.broadcastState();
+    await this.saveState();
   }
 
-  webSocketError(ws: WebSocket) {
-    this.webSocketClose(ws);
+  async webSocketError(ws: WebSocket) {
+    await this.webSocketClose(ws);
   }
 }
 

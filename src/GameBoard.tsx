@@ -5,6 +5,9 @@ import React, { useState, useEffect, useRef } from "react";
 import GameHeader from "./GameHeader";
 import RainOverlay from "./RainOverlay";
 import confetti from "canvas-confetti";
+import CustomDragLayer from "./CustomDragLayer";
+import { DndProvider } from "react-dnd";
+import { TouchBackend } from "react-dnd-touch-backend";
 
 type GamePhase = "waiting" | "playing";
 
@@ -168,6 +171,9 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
   const showFullModal = myRole === "spectator";
 
   return (
+    <DndProvider backend={TouchBackend} options={{ enableMouseEvents: true }}>
+    <>
+    <CustomDragLayer />
     <div className="max-w-screen-lg mx-auto p-2 md:pt-5 h-dvh flex flex-col overflow-hidden">
       <RainOverlay active={showRain} />
       <GameHeader resetGame={resetGame} onHome={onLeave} />
@@ -352,6 +358,8 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
         </div>
       )}
     </div>
+    </>
+    </DndProvider>
   );
 }
 
