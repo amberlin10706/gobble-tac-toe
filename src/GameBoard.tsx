@@ -168,7 +168,7 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
   const showFullModal = myRole === "spectator";
 
   return (
-    <div className="max-w-screen-lg mx-auto p-2 md:pt-5 h-screen flex flex-col overflow-hidden">
+    <div className="max-w-screen-lg mx-auto p-2 md:pt-5 h-dvh flex flex-col overflow-hidden">
       <RainOverlay active={showRain} />
       <GameHeader resetGame={resetGame} onHome={onLeave} />
 
