@@ -22,7 +22,7 @@ export default function GameBoard() {
   );
 
   const [currentPlayer, setCurrentPlayer] = useState<GamePieceOwner | null>(
-    null,
+    "A",
   );
 
   const onDropPiece = (item: GamePieceInfo, cellIndex: number) => {
