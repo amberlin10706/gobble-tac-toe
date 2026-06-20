@@ -99,10 +99,10 @@ export default function GameBoard() {
   }
 
   return (
-    <div className="max-w-screen-lg mx-auto p-2 md:pt-5">
+    <div className="max-w-screen-lg mx-auto p-2 md:pt-5 h-screen flex flex-col overflow-hidden">
       <GameHeader resetGame={resetGame} />
 
-      <div className="flex flex-col gap-y-4 mt-3">
+      <div className="flex flex-col gap-y-4 mt-3 flex-1 min-h-0">
         <div className="bg-orange-50">
           <PieceSet
             pieces={A}
@@ -113,17 +113,19 @@ export default function GameBoard() {
           />
         </div>
 
-        <div className="w-full h-[calc(100vh-300px)]">
-          <div className="grid grid-cols-3 grid-rows-3 w-full h-full border">
-            {cells.map((cell, cellIndex) => (
-              <BoardCell
-                key={cellIndex}
-                piece={cell[cell.length - 1] || null}
-                currentPlayer={currentPlayer}
-                onDropPiece={(item) => onDropPiece(item, cellIndex)}
-                winner={winner}
-              />
-            ))}
+        <div className="flex-1 min-h-0 flex justify-center">
+          <div className="h-full aspect-square">
+            <div className="grid grid-cols-3 grid-rows-3 w-full h-full border">
+              {cells.map((cell, cellIndex) => (
+                <BoardCell
+                  key={cellIndex}
+                  piece={cell[cell.length - 1] || null}
+                  currentPlayer={currentPlayer}
+                  onDropPiece={(item) => onDropPiece(item, cellIndex)}
+                  winner={winner}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
