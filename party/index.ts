@@ -1,4 +1,4 @@
-import type * as Party from "partykit/server";
+import { DurableObject } from "cloudflare:workers";
 
 export type GamePieceOwner = "A" | "B";
 export type GamePieceSize = 1 | 2 | 3 | 4 | 5 | 6;
@@ -32,6 +32,10 @@ export type ServerMessage =
   | { type: "assigned"; role: GamePieceOwner | "waiting" | "spectator" }
   | { type: "state"; state: GameState; playersInfo: { A: boolean; B: boolean } }
   | { type: "error"; message: string };
+
+export interface Env {
+  GAME_ROOM: DurableObjectNamespace;
+}
 
 function generateInitPiece(size: GamePieceSize, owner: GamePieceOwner): GamePieceInfo {
   return { size, owner, inUse: null };
@@ -101,15 +105,11 @@ function applyDrop(state: GameState, item: GamePieceInfo, cellIndex: number): Ga
   };
 }
 
-export default class GameRoom implements Party.Server {
-  // Two player slots (arrival order), role map, ready set, connection map
+export class GameRoom extends DurableObject<Env> {
   slots: [string | null, string | null] = [null, null];
   roleMap: Record<string, GamePieceOwner> = {};
   readySet: Set<string> = new Set();
-  connMap: Map<string, Party.Connection> = new Map();
   game: GameState = initialGameState();
-
-  constructor(readonly room: Party.Room) {}
 
   getPlayersInfo() {
     const aId = Object.entries(this.roleMap).find(([, r]) => r === "A")?.[0];
@@ -119,66 +119,64 @@ export default class GameRoom implements Party.Server {
 
   broadcastState() {
     const msg: ServerMessage = { type: "state", state: this.game, playersInfo: this.getPlayersInfo() };
-    this.room.broadcast(JSON.stringify(msg));
+    this.ctx.getWebSockets().forEach((ws) => ws.send(JSON.stringify(msg)));
   }
 
-  sendTo(connId: string, msg: ServerMessage) {
-    this.connMap.get(connId)?.send(JSON.stringify(msg));
+  sendTo(ws: WebSocket, msg: ServerMessage) {
+    ws.send(JSON.stringify(msg));
   }
 
-  onConnect(conn: Party.Connection) {
-    this.connMap.set(conn.id, conn);
+  async fetch(request: Request): Promise<Response> {
+    const upgradeHeader = request.headers.get("Upgrade");
+    if (upgradeHeader !== "websocket") {
+      return new Response("Expected WebSocket", { status: 426 });
+    }
+
+    const { 0: client, 1: server } = new WebSocketPair();
+    this.ctx.acceptWebSocket(server);
+
+    const connId = crypto.randomUUID();
+    server.serializeAttachment({ connId });
 
     if (!this.slots[0]) {
-      // First player — role TBD until opponent joins
-      this.slots[0] = conn.id;
-      this.sendTo(conn.id, { type: "assigned", role: "waiting" });
-      this.sendTo(conn.id, { type: "state", state: this.game, playersInfo: this.getPlayersInfo() });
+      this.slots[0] = connId;
+      this.sendTo(server, { type: "assigned", role: "waiting" });
+      this.sendTo(server, { type: "state", state: this.game, playersInfo: this.getPlayersInfo() });
     } else if (!this.slots[1]) {
-      // Second player — randomly assign A/B now
-      this.slots[1] = conn.id;
+      this.slots[1] = connId;
 
       const firstGetsA = Math.random() < 0.5;
       this.roleMap[this.slots[0]] = firstGetsA ? "A" : "B";
-      this.roleMap[this.slots[1]] = firstGetsA ? "B" : "A";
+      this.roleMap[connId] = firstGetsA ? "B" : "A";
 
-      // Notify both of their roles
-      this.sendTo(this.slots[0], { type: "assigned", role: this.roleMap[this.slots[0]] });
-      this.sendTo(this.slots[1], { type: "assigned", role: this.roleMap[this.slots[1]] });
+      // Notify slot[0] of their role
+      const ws0 = this.ctx.getWebSockets().find((ws) => {
+        const att = ws.deserializeAttachment() as { connId: string };
+        return att?.connId === this.slots[0];
+      });
+      if (ws0) this.sendTo(ws0, { type: "assigned", role: this.roleMap[this.slots[0]] });
+      this.sendTo(server, { type: "assigned", role: this.roleMap[connId] });
 
-      // Broadcast updated state (both players now connected)
       this.broadcastState();
     } else {
-      // Spectator
-      this.sendTo(conn.id, { type: "assigned", role: "spectator" });
-      this.sendTo(conn.id, { type: "state", state: this.game, playersInfo: this.getPlayersInfo() });
-    }
-  }
-
-  onClose(conn: Party.Connection) {
-    this.connMap.delete(conn.id);
-
-    const slotIdx = this.slots.indexOf(conn.id);
-    if (slotIdx !== -1) {
-      this.slots[slotIdx] = null;
-      delete this.roleMap[conn.id];
-      this.readySet.delete(conn.id);
-
-      // Reset game back to waiting when a player leaves
-      this.game = { ...this.game, phase: "waiting" };
-      this.readySet.clear();
+      this.sendTo(server, { type: "assigned", role: "spectator" });
+      this.sendTo(server, { type: "state", state: this.game, playersInfo: this.getPlayersInfo() });
     }
 
-    this.broadcastState();
+    return new Response(null, { status: 101, webSocket: client });
   }
 
-  onMessage(message: string, sender: Party.Connection) {
+  webSocketMessage(ws: WebSocket, message: string) {
+    const att = ws.deserializeAttachment() as { connId: string };
+    const connId = att?.connId;
+    if (!connId) return;
+
     const msg = JSON.parse(message) as ClientMessage;
-    const role = this.roleMap[sender.id];
+    const role = this.roleMap[connId];
 
     if (msg.type === "ready") {
       if (!role) return;
-      this.readySet.add(sender.id);
+      this.readySet.add(connId);
 
       const readyA = !!(this.slots[0] && this.readySet.has(this.slots[0]) && this.roleMap[this.slots[0]] === "A") ||
                      !!(this.slots[1] && this.readySet.has(this.slots[1]) && this.roleMap[this.slots[1]] === "A");
@@ -186,12 +184,7 @@ export default class GameRoom implements Party.Server {
                      !!(this.slots[1] && this.readySet.has(this.slots[1]) && this.roleMap[this.slots[1]] === "B");
       const bothReady = this.slots.every((id) => id && this.readySet.has(id));
 
-      this.game = {
-        ...this.game,
-        readyA,
-        readyB,
-        phase: bothReady ? "playing" : "waiting",
-      };
+      this.game = { ...this.game, readyA, readyB, phase: bothReady ? "playing" : "waiting" };
       this.broadcastState();
     }
 
@@ -209,13 +202,45 @@ export default class GameRoom implements Party.Server {
     if (msg.type === "reset") {
       if (!role) return;
       this.readySet.clear();
-      this.readySet.add(sender.id); // resetter is auto-ready
+      this.readySet.add(connId);
       const readyA = role === "A";
       const readyB = role === "B";
       this.game = { ...initialGameState(), readyA, readyB, restartedBy: role };
       this.broadcastState();
     }
   }
+
+  webSocketClose(ws: WebSocket) {
+    const att = ws.deserializeAttachment() as { connId: string };
+    const connId = att?.connId;
+    if (!connId) return;
+
+    const slotIdx = this.slots.indexOf(connId);
+    if (slotIdx !== -1) {
+      this.slots[slotIdx] = null;
+      delete this.roleMap[connId];
+      this.readySet.delete(connId);
+      this.game = { ...this.game, phase: "waiting" };
+      this.readySet.clear();
+    }
+
+    this.broadcastState();
+  }
+
+  webSocketError(ws: WebSocket) {
+    this.webSocketClose(ws);
+  }
 }
 
-GameRoom satisfies Party.Worker;
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    // URL format: /room/:roomId
+    const parts = url.pathname.split("/");
+    const roomId = parts[2] || "default";
+
+    const id = env.GAME_ROOM.idFromName(roomId);
+    const stub = env.GAME_ROOM.get(id);
+    return stub.fetch(request);
+  },
+};

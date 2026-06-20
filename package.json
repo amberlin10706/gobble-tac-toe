@@ -4,10 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"partykit dev\"",
+    "dev": "concurrently \"vite\" \"npx wrangler dev\"",
     "dev:vite": "vite",
-    "dev:party": "partykit dev",
+    "dev:worker": "npx wrangler dev",
     "build": "vite build",
+    "deploy:worker": "wrangler deploy",
+    "deploy:pages": "vite build && wrangler pages deploy dist --project-name gobble-tac-toe",
     "lint": "eslint .",
     "preview": "vite preview"
   },

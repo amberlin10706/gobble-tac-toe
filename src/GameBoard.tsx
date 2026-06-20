@@ -3,9 +3,8 @@ import BoardCell from "./BoardCell";
 import { GamePieceOwner, GamePieceInfo, GamePieceSize } from "./GamePiece";
 import React, { useState, useEffect, useRef } from "react";
 import GameHeader from "./GameHeader";
-import GameRules from "./GameRules";
+import RainOverlay from "./RainOverlay";
 import confetti from "canvas-confetti";
-import PartySocket from "partysocket";
 
 type GamePhase = "waiting" | "playing";
 
@@ -34,8 +33,12 @@ interface GameBoardProps {
 export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
   const [gameState, setGameState] = useState<GameState>({
     cells: Array.from({ length: 9 }, () => []),
-    piecesA: Array.from({ length: 6 }, (_, i) => generateInitPiece((i + 1) as GamePieceSize, "A")),
-    piecesB: Array.from({ length: 6 }, (_, i) => generateInitPiece((i + 1) as GamePieceSize, "B")),
+    piecesA: Array.from({ length: 6 }, (_, i) =>
+      generateInitPiece((i + 1) as GamePieceSize, "A"),
+    ),
+    piecesB: Array.from({ length: 6 }, (_, i) =>
+      generateInitPiece((i + 1) as GamePieceSize, "B"),
+    ),
     currentPlayer: "A",
     winner: null,
     phase: "waiting",
@@ -43,17 +46,23 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
     readyB: false,
     restartedBy: null,
   });
-  const [myRole, setMyRole] = useState<GamePieceOwner | "waiting" | "spectator" | null>(null);
-  const [playersInfo, setPlayersInfo] = useState<{ A: boolean; B: boolean }>({ A: false, B: false });
+  const [myRole, setMyRole] = useState<
+    GamePieceOwner | "waiting" | "spectator" | null
+  >(null);
+  const [showRain, setShowRain] = useState(false);
+  const confettiIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [playersInfo, setPlayersInfo] = useState<{ A: boolean; B: boolean }>({
+    A: false,
+    B: false,
+  });
   const [copied, setCopied] = useState(false);
-  const socketRef = useRef<PartySocket | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
   const prevWinnerRef = useRef<GamePieceOwner | null>(null);
 
   useEffect(() => {
-    const socket = new PartySocket({
-      host: import.meta.env.VITE_PARTYKIT_HOST || "localhost:1999",
-      room: roomId,
-    });
+    const host = import.meta.env.VITE_WORKER_HOST || "localhost:8787";
+    const protocol = host.startsWith("localhost") ? "ws" : "wss";
+    const socket = new WebSocket(`${protocol}://${host}/room/${roomId}`);
     socketRef.current = socket;
 
     socket.addEventListener("message", (event) => {
@@ -74,8 +83,8 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
       prevWinnerRef.current = gameState.winner;
       const iWon = gameState.winner === myRole;
       if (iWon) {
-        confetti({
-          particleCount: 120,
+        const fire = () => confetti({
+          particleCount: 60,
           spread: 200,
           angle: 90,
           origin: { y: 0.8 },
@@ -84,23 +93,21 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
           ticks: 250,
           decay: 0.95,
         });
+        fire();
+        confettiIntervalRef.current = setInterval(fire, 800);
+        setTimeout(() => {
+          if (confettiIntervalRef.current) clearInterval(confettiIntervalRef.current);
+        }, 5000);
       } else {
-        // Loser: slow grey teardrops falling from top
-        confetti({
-          particleCount: 60,
-          spread: 80,
-          angle: 270,
-          origin: { y: 0 },
-          colors: ["#888", "#aaa", "#555", "#999"],
-          startVelocity: 12,
-          gravity: 0.6,
-          ticks: 220,
-          decay: 0.92,
-          shapes: ["circle"],
-        });
+        setShowRain(true);
+        setTimeout(() => setShowRain(false), 5000);
       }
     }
-    if (!gameState.winner) prevWinnerRef.current = null;
+    if (!gameState.winner) {
+      prevWinnerRef.current = null;
+      if (confettiIntervalRef.current) clearInterval(confettiIntervalRef.current);
+      setShowRain(false);
+    }
   }, [gameState.winner, myRole]);
 
   const sendReady = () => {
@@ -124,7 +131,17 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const { cells, piecesA, piecesB, currentPlayer, winner, phase, readyA, readyB, restartedBy } = gameState;
+  const {
+    cells,
+    piecesA,
+    piecesB,
+    currentPlayer,
+    winner,
+    phase,
+    readyA,
+    readyB,
+    restartedBy,
+  } = gameState;
   const myReady = myRole === "A" ? readyA : myRole === "B" ? readyB : false;
   // Invitation popup: opponent restarted and I haven't accepted yet
   const showRestartInvite =
@@ -138,9 +155,12 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
   const bothConnected = playersInfo.A && playersInfo.B;
 
   // My pieces go at bottom, opponent at top
-  const myPieces = myRole === "A" ? piecesA : myRole === "B" ? piecesB : piecesA;
-  const opponentPieces = myRole === "A" ? piecesB : myRole === "B" ? piecesA : piecesB;
-  const myActualRole: GamePieceOwner = myRole === "A" || myRole === "B" ? myRole : "A";
+  const myPieces =
+    myRole === "A" ? piecesA : myRole === "B" ? piecesB : piecesA;
+  const opponentPieces =
+    myRole === "A" ? piecesB : myRole === "B" ? piecesA : piecesB;
+  const myActualRole: GamePieceOwner =
+    myRole === "A" || myRole === "B" ? myRole : "A";
   const opponentActualRole: GamePieceOwner = opponentRole ?? "B";
 
   const showReadyModal =
@@ -149,6 +169,7 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
 
   return (
     <div className="max-w-screen-lg mx-auto p-2 md:pt-5 h-screen flex flex-col overflow-hidden">
+      <RainOverlay active={showRain} />
       <GameHeader resetGame={resetGame} onHome={onLeave} />
 
       <div className="flex justify-between items-center text-sm text-gray-500 mb-1 px-1">
@@ -167,7 +188,11 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
           {(myRole === "A" || myRole === "B") && (
             <span className="flex items-center gap-1">
               你是
-              <img src={`/piece_pig_${myRole}.png`} alt={myRole} className="inline w-5 h-5" />
+              <img
+                src={`/piece_pig_${myRole}.png`}
+                alt={myRole}
+                className="inline w-5 h-5"
+              />
             </span>
           )}
           {myRole === "waiting" && (
@@ -180,7 +205,11 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
               ) : (
                 <span className="text-gray-500">對手回合</span>
               )}
-              <img src={`/piece_pig_${currentPlayer}.png`} alt={currentPlayer} className="inline w-5 h-5" />
+              <img
+                src={`/piece_pig_${currentPlayer}.png`}
+                alt={currentPlayer}
+                className="inline w-5 h-5"
+              />
             </span>
           )}
           {winner && (
@@ -190,7 +219,11 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
               ) : (
                 <span className="text-gray-500">對手獲勝</span>
               )}
-              <img src={`/piece_pig_${winner}.png`} alt={winner} className="inline w-5 h-5" />
+              <img
+                src={`/piece_pig_${winner}.png`}
+                alt={winner}
+                className="inline w-5 h-5"
+              />
             </span>
           )}
         </div>
@@ -198,7 +231,9 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
 
       <div className="flex flex-col gap-y-4 mt-3 flex-1 min-h-0">
         {/* Opponent pieces — top */}
-        <div className={opponentActualRole === "A" ? "bg-orange-50" : "bg-blue-50"}>
+        <div
+          className={opponentActualRole === "A" ? "bg-orange-50" : "bg-blue-50"}
+        >
           <PieceSet
             pieces={opponentPieces}
             disabledDrop={true}
@@ -244,14 +279,21 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
             <h2 className="text-xl font-bold text-center">對手已加入！</h2>
 
             <div className="text-sm text-gray-600">
-              <p className="font-semibold mb-1">你是
-                <img src={`/piece_pig_${myRole}.png`} alt={myRole as string} className="inline w-6 mx-1" />
+              <p className="font-semibold mb-1">
+                你是
+                <img
+                  src={`/piece_pig_${myRole}.png`}
+                  alt={myRole as string}
+                  className="inline w-6 mx-1"
+                />
                 {myRole === "A" ? "（橘色，先手）" : "（藍色，後手）"}
               </p>
             </div>
 
             <details className="text-sm text-gray-700 border rounded-lg p-3">
-              <summary className="cursor-pointer font-semibold">📘 How to Play</summary>
+              <summary className="cursor-pointer font-semibold">
+                📘 How to Play
+              </summary>
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>玩家輪流出手，橘色旗子先。</li>
                 <li>每次只能拖動自己的旗子。</li>
@@ -297,7 +339,9 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-[300px] p-6 flex flex-col gap-4 text-center">
             <h2 className="text-xl font-bold">此房間人數已滿</h2>
-            <p className="text-gray-500 text-sm">房間已有兩名玩家，請建立新房間或等待有人離開。</p>
+            <p className="text-gray-500 text-sm">
+              房間已有兩名玩家，請建立新房間或等待有人離開。
+            </p>
             <button
               className="w-full py-3 bg-blue-400 hover:bg-blue-500 text-white rounded-xl font-bold transition cursor-pointer"
               onClick={onLeave}
@@ -311,6 +355,9 @@ export default function GameBoard({ roomId, onLeave }: GameBoardProps) {
   );
 }
 
-function generateInitPiece(size: GamePieceSize, owner: GamePieceOwner): GamePieceInfo {
+function generateInitPiece(
+  size: GamePieceSize,
+  owner: GamePieceOwner,
+): GamePieceInfo {
   return { size, owner, inUse: null };
 }
